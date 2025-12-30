@@ -95,37 +95,50 @@
     }
 
     function updateUI() {
-        let gross = parseFloat(document.getElementById('grossIncome').value) || 0;
-        const status = document.getElementById('filingStatus').value;
-        const kids = parseInt(document.getElementById('children').value) || 0;
-        const isGig = document.getElementById('isGigWorker').checked;
-        const miles = parseFloat(document.getElementById('workMiles').value) || 0;
+    let gross = parseFloat(document.getElementById('grossIncome').value) || 0;
+    const status = document.getElementById('filingStatus').value;
+    const kids = parseInt(document.getElementById('children').value) || 0;
+    const isGig = document.getElementById('isGigWorker').checked;
+    const miles = parseFloat(document.getElementById('workMiles').value) || 0;
 
-        let mileageDeduction = 0;
-        if (isGig) {
-            mileageDeduction = miles * 0.67;
-            document.getElementById('gigInfo').innerText = `Deducción por millaje: -$${Math.round(mileageDeduction).toLocaleString()}`;
-            document.getElementById('gigInfo').style.display = 'block';
-        } else {
-            document.getElementById('gigInfo').style.display = 'none';
-        }
+    // ACTUALIZACIÓN 2025: Tasa de 70 centavos por milla
+    const MILEAGE_RATE = 0.70; 
+    let mileageDeduction = 0;
 
-        // El ingreso imponible baja gracias a las millas
-        const taxableIncome = Math.max(0, gross - mileageDeduction);
-
-        const fedTax = Math.max(0, calc(taxableIncome - DATA.fed.sd[status], DATA.fed.brackets) - (kids * 2000));
-        let mnCredit = kids * 1750;
-        if (taxableIncome > (status === 'married' ? 35000 : 29500)) mnCredit = Math.max(0, mnCredit - (taxableIncome - (status === 'married' ? 35000 : 29500)) * 0.10);
-        
-        const stateTax = calc(taxableIncome - DATA.mn.sd[status], DATA.mn.brackets) - mnCredit;
-        const totalTax = fedTax + stateTax;
-
-        document.getElementById('fedTax').innerText = `$${Math.round(fedTax).toLocaleString()}`;
-        document.getElementById('stateTax').innerText = `$${Math.round(stateTax).toLocaleString()}`;
-        document.getElementById('totalCredits').innerText = `-$${Math.round(mnCredit + (kids * 2000)).toLocaleString()}`;
-        document.getElementById('netPay').innerText = `$${Math.round(taxableIncome - totalTax).toLocaleString()}`;
-        document.getElementById('resultsBox').style.display = 'block';
+    if (isGig) {
+        // Esta deducción ya cubre gasolina, aceite, llantas y reparaciones
+        mileageDeduction = miles * MILEAGE_RATE;
+        document.getElementById('gigInfo').innerHTML = `
+            <strong>Deducción por Trabajo ($0.70/milla):</strong> -$${Math.round(mileageDeduction).toLocaleString()}<br>
+            <small><i>*Incluye mantenimiento, gasolina y desgaste.</i></small>`;
+        document.getElementById('gigInfo').style.display = 'block';
+    } else {
+        document.getElementById('gigInfo').style.display = 'none';
     }
+
+    // El ingreso imponible se reduce por las millas trabajadas
+    const taxableIncome = Math.max(0, gross - mileageDeduction);
+
+    // Cálculos Federales y Estatales con el nuevo ingreso ajustado
+    const fedTax = Math.max(0, calc(taxableIncome - DATA.fed.sd[status], DATA.fed.brackets) - (kids * 2000));
+    
+    let mnCredit = kids * 1750;
+    let threshold = (status === 'married') ? 35000 : 29500;
+    if (taxableIncome > threshold) {
+        mnCredit = Math.max(0, mnCredit - (taxableIncome - threshold) * 0.10);
+    }
+    
+    const stateTax = calc(taxableIncome - DATA.mn.sd[status], DATA.mn.brackets) - mnCredit;
+    const totalTax = fedTax + stateTax;
+
+    // Mostrar resultados en la pantalla
+    document.getElementById('fedTax').innerText = `$${Math.round(fedTax).toLocaleString()}`;
+    document.getElementById('stateTax').innerText = `$${Math.round(stateTax).toLocaleString()}`;
+    document.getElementById('totalCredits').innerText = `-$${Math.round(mnCredit + (kids * 2000)).toLocaleString()}`;
+    document.getElementById('netPay').innerText = `$${Math.round(taxableIncome - totalTax).toLocaleString()}`;
+    document.getElementById('resultsBox').style.display = 'block';
+}
+
 
     function generatePDF() {
         const { jsPDF } = window.jspdf;
