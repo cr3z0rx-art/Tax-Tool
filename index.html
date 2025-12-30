@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora Taxes 2025 - MN Pro</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #eef2f3; display: flex; justify-content: center; padding: 20px; }
+        .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 8px 30px rgba(0,0,0,0.1); width: 100%; max-width: 550px; }
+        h2 { color: #2c3e50; text-align: center; margin-bottom: 20px; border-bottom: 2px solid #27ae60; padding-bottom: 10px; }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #34495e; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; transition: 0.3s; }
+        input:focus { border-color: #27ae60; outline: none; box-shadow: 0 0 5px rgba(39,174,96,0.3); }
+        button { width: 100%; padding: 15px; background-color: #27ae60; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        button:hover { background-color: #219150; }
+        .results { margin-top: 25px; padding: 20px; background: #f9f9f9; border-radius: 10px; display: none; }
+        .result-item { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 16px; }
+        .credit { color: #2980b9; font-weight: bold; }
+        .total { font-weight: bold; color: #c0392b; font-size: 19px; border-top: 1px solid #ddd; padding-top: 10px; }
+        .net-pay { font-weight: bold; color: #27ae60; font-size: 22px; text-align: center; display: block; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Calculadora Fiscal MN 2025</h2>
+    
+    <div class="input-group">
+        <label>Ingreso Anual Bruto ($)</label>
+        <input type="number" id="grossIncome" placeholder="Ej: 60000">
+    </div>
+
+    <div class="input-group">
+        <label>Estado Civil</label>
+        <select id="filingStatus">
+            <option value="single">Single (Soltero)</option>
+            <option value="married">Married (Casado)</option>
+        </select>
+    </div>
+
+    <div class="input-group">
+        <label>Número de hijos (Menores de 17)</label>
+        <input type="number" id="children" value="0" min="0">
+    </div>
+
+    <button onclick="updateUI()">Calcular Mi Promedio</button>
+
+    <div class="results" id="resultsBox">
+        <div class="result-item"><span>Impuesto Federal:</span> <span id="fedTax">$0</span></div>
+        <div class="result-item"><span>Impuesto MN (Base):</span> <span id="stateTaxBase">$0</span></div>
+        <div class="result-item credit"><span>Crédito por Hijos MN:</span> <span id="mnChildCredit">-$0</span></div>
+        <div class="result-item total"><span>Impuesto Total Final:</span> <span id="totalTax">$0</span></div>
+        <hr>
+        <label style="text-align: center;">Tu Ingreso Neto Estimado:</label>
+        <span class="net-pay" id="netPay">$0</span>
+        <div class="result-item" style="justify-content: center;"><small id="effRate">Tasa: 0%</small></div>
+    </div>
+</div>
+
+<script>
+    const TAX_DATA = {
+        federal: {
+            standardDeduction: { single: 15000, married: 30000 },
+            brackets: {
+                single: [{r: 0.1, t: 0}, {r: 0.12, t: 11925}, {r: 0.22, t: 48475}, {r: 0.24, t: 103350}],
+                married: [{r: 0.1, t: 0}, {r: 0.12, t: 23850}, {r: 0.22, t: 96950}, {r: 0.24, t: 206700}]
+            }
+        },
+        minnesota: {
+            standardDeduction: { single: 15000, married: 30000 },
+            brackets: {
+                single: [{r: 0.0535, t: 0}, {r: 0.068, t: 32570}, {r: 0.0785, t: 106990}],
+                married: [{r: 0.0535, t: 0}, {r: 0.068, t: 47620}, {r: 0.0785, t: 189180}]
+            }
+        }
+    };
+
+    function calculateTax(income, brackets) {
+        let tax = 0;
+        for (let i = brackets.length - 1; i >= 0; i--) {
+            if (income > brackets[i].t) {
+                tax += (income - brackets[i].t) * brackets[i].r;
+                income = brackets[i].t;
+            }
+        }
+        return tax;
+    }
+
+    function getMNChildCredit(income, children, status) {
+        if (children <= 0) return 0;
+        let maxCredit = children * 1750;
+        let threshold = (status === 'married') ? 35000 : 29500;
+        
+        if (income <= threshold) return maxCredit;
+        
+        // Reducción del 10% sobre el exceso de ingreso
+        let reduction = (income - threshold) * 0.10;
+        return Math.max(0, maxCredit - reduction);
+    }
+
+    function updateUI() {
+        const gross = parseFloat(document.getElementById('grossIncome').value) || 0;
+        const status = document.getElementById('filingStatus').value;
+        const numChildren = parseInt(document.getElementById('children').value) || 0;
+
+        // Cálculos
+        const fedTax = calculateTax(Math.max(0, gross - TAX_DATA.federal.standardDeduction[status]), TAX_DATA.federal.brackets[status]);
+        const stateTaxBase = calculateTax(Math.max(0, gross - TAX_DATA.minnesota.standardDeduction[status]), TAX_DATA.minnesota.brackets[status]);
+        
+        const mnCredit = getMNChildCredit(gross, numChildren, status);
+        const finalStateTax = Math.max(-maxCreditPossible(numChildren), stateTaxBase - mnCredit); // MN CTC es reembolsable
+        
+        const totalTax = fedTax + (stateTaxBase - mnCredit);
+        const net = gross - totalTax;
+
+        // UI
+        document.getElementById('fedTax').innerText = `$${Math.round(fedTax).toLocaleString()}`;
+        document.getElementById('stateTaxBase').innerText = `$${Math.round(stateTaxBase).toLocaleString()}`;
+        document.getElementById('mnChildCredit').innerText = `-$${Math.round(mnCredit).toLocaleString()}`;
+        document.getElementById('totalTax').innerText = `$${Math.round(totalTax).toLocaleString()}`;
+        document.getElementById('netPay').innerText = `$${Math.round(net).toLocaleString()}`;
+        document.getElementById('effRate').innerText = `Tasa Efectiva: ${((totalTax / gross) * 100).toFixed(1)}%`;
+        
+        document.getElementById('resultsBox').style.display = 'block';
+    }
+    
+    function maxCreditPossible(n) { return n * 1750; }
+</script>
+
+</body>
+</html>
