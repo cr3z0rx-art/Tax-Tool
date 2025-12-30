@@ -3,71 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculadora Fiscal Pro - Minnesota 2025</title>
+    <title>Calculadora Fiscal MN 2025 - Gig Economy</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f4f7f9; display: flex; justify-content: center; padding: 20px; }
-        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 600px; }
-        h2 { color: #2c3e50; text-align: center; border-bottom: 4px solid #27ae60; padding-bottom: 10px; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f0f4f8; display: flex; justify-content: center; padding: 20px; }
+        .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 600px; }
+        h2 { color: #2c3e50; text-align: center; border-bottom: 3px solid #27ae60; padding-bottom: 10px; }
         .input-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; font-weight: bold; color: #34495e; }
-        input, select { width: 100%; padding: 12px; border: 1px solid #ccd1d1; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
-        .btn-calc { width: 100%; padding: 15px; background-color: #27ae60; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin-bottom: 10px; }
-        .btn-pdf { width: 100%; padding: 12px; background-color: #3498db; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; display: none; }
-        .results { margin-top: 25px; padding: 20px; background: #f8fdfa; border: 1px solid #d4efdf; border-radius: 10px; display: none; }
-        .result-item { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 17px; }
-        .net-pay { font-weight: bold; color: #27ae60; font-size: 26px; text-align: center; display: block; margin: 15px 0; }
-        .info-table { margin-top: 20px; font-size: 12px; color: #7f8c8d; width: 100%; border-collapse: collapse; }
-        .info-table td { border: 1px solid #eee; padding: 8px; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
+        .checkbox-group { display: flex; align-items: center; gap: 10px; margin: 15px 0; background: #e8f6ef; padding: 10px; border-radius: 8px; }
+        .checkbox-group input { width: auto; }
+        .gig-fields { display: none; background: #fdfefe; border: 1px dashed #27ae60; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+        .btn-calc { width: 100%; padding: 15px; background-color: #27ae60; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; }
+        .results { margin-top: 25px; padding: 20px; background: #f8fdfa; border-radius: 10px; display: none; border: 1px solid #d4efdf; }
+        .net-pay { font-weight: bold; color: #27ae60; font-size: 26px; text-align: center; display: block; margin: 10px 0; }
+        .expense-note { color: #e67e22; font-size: 14px; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>Reporte de Taxes MN 2025</h2>
+    <h2>Calculadora de Taxes MN 2025</h2>
     
     <div class="input-group">
-        <label>Ingreso Bruto Anual ($)</label>
-        <input type="number" id="grossIncome" placeholder="Ej: 60000">
+        <label>Ingreso Bruto Anual (W2 + 1099) ($)</label>
+        <input type="number" id="grossIncome" placeholder="Ej: 50000">
+    </div>
+
+    <div class="checkbox-group">
+        <input type="checkbox" id="isGigWorker" onchange="toggleGigFields()">
+        <label for="isGigWorker" style="margin:0;">¿Trabajas con tu carro? (Uber, DoorDash, etc.)</label>
+    </div>
+
+    <div id="gigFields" class="gig-fields">
+        <div class="input-group">
+            <label>Millas trabajadas en el año</label>
+            <input type="number" id="workMiles" placeholder="Ej: 15000">
+            <small>El IRS permite deducir ~$0.67 por milla en 2025.</small>
+        </div>
     </div>
 
     <div class="input-group">
         <label>Estado Civil</label>
         <select id="filingStatus">
-            <option value="single">Single (Soltero)</option>
-            <option value="married">Married (Casado)</option>
+            <option value="single">Single</option>
+            <option value="married">Married (Conjunto)</option>
         </select>
     </div>
 
     <div class="input-group">
-        <label>Número de Hijos</label>
+        <label>Número de Hijos (Menores de 17)</label>
         <input type="number" id="children" value="0">
     </div>
 
-    <div class="input-group">
-        <label>Gasto en Placas (Tabs) ($)</label>
-        <input type="number" id="carTax" value="0">
-    </div>
-
-    <div class="input-group">
-        <label>Renta Mensual ($)</label>
-        <input type="number" id="monthlyRent" value="0">
-    </div>
-
-    <button class="btn-calc" onclick="updateUI()">Calcular y Analizar</button>
-    <button class="btn-pdf" id="pdfBtn" onclick="generatePDF()">Descargar Reporte PDF</button>
+    <button class="btn-calc" onclick="updateUI()">Calcular Mi Promedio</button>
 
     <div class="results" id="resultsBox">
-        <div class="result-item"><span>Impuesto Federal:</span> <span id="fedTax">$0</span></div>
-        <div class="result-item"><span>Impuesto MN:</span> <span id="stateTax">$0</span></div>
-        <div class="result-item" style="color: #2980b9;"><span>Total Créditos/Reembolsos:</span> <span id="totalCredits">-$0</span></div>
+        <div id="gigInfo" class="expense-note" style="display:none; margin-bottom:10px;"></div>
+        <div style="display:flex; justify-content:space-between;"><span>Impuesto Fed:</span> <span id="fedTax">$0</span></div>
+        <div style="display:flex; justify-content:space-between;"><span>Impuesto MN:</span> <span id="stateTax">$0</span></div>
+        <div style="display:flex; justify-content:space-between; color:#2980b9; font-weight:bold;">
+            <span>Total Créditos/Reembolsos:</span> <span id="totalCredits">-$0</span>
+        </div>
         <hr>
-        <label style="text-align:center; display:block;">Estimado Take-Home Anual:</label>
+        <label style="text-align:center; display:block;">Ingreso Neto Estimado (Después de gastos y taxes):</label>
         <span class="net-pay" id="netPay">$0</span>
-        
-        <table class="info-table">
-            <tr><td><b>Nota:</b> El cálculo incluye el Child Tax Credit ($2000 Fed / $1750 MN) y el Renter's Refund estimado.</td></tr>
-        </table>
+        <button onclick="generatePDF()" style="width:100%; background:#3498db; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer;">Descargar PDF</button>
     </div>
 </div>
 
@@ -76,6 +78,10 @@
         fed: { sd: {single: 15000, married: 30000}, brackets: [{r:0.1, t:0}, {r:0.12, t:11925}, {r:0.22, t:48475}, {r:0.24, t:103350}] },
         mn: { sd: {single: 15000, married: 30000}, brackets: [{r:0.0535, t:0}, {r:0.068, t:32570}, {r:0.0785, t:106990}] }
     };
+
+    function toggleGigFields() {
+        document.getElementById('gigFields').style.display = document.getElementById('isGigWorker').checked ? 'block' : 'none';
+    }
 
     function calc(income, brackets) {
         let tax = 0;
@@ -89,45 +95,44 @@
     }
 
     function updateUI() {
-        const gross = parseFloat(document.getElementById('grossIncome').value) || 0;
+        let gross = parseFloat(document.getElementById('grossIncome').value) || 0;
         const status = document.getElementById('filingStatus').value;
         const kids = parseInt(document.getElementById('children').value) || 0;
-        const car = parseFloat(document.getElementById('carTax').value) || 0;
-        const rent = parseFloat(document.getElementById('monthlyRent').value) || 0;
+        const isGig = document.getElementById('isGigWorker').checked;
+        const miles = parseFloat(document.getElementById('workMiles').value) || 0;
 
-        const fedTax = Math.max(0, calc(gross - DATA.fed.sd[status], DATA.fed.brackets) - (kids * 2000));
+        let mileageDeduction = 0;
+        if (isGig) {
+            mileageDeduction = miles * 0.67;
+            document.getElementById('gigInfo').innerText = `Deducción por millaje: -$${Math.round(mileageDeduction).toLocaleString()}`;
+            document.getElementById('gigInfo').style.display = 'block';
+        } else {
+            document.getElementById('gigInfo').style.display = 'none';
+        }
+
+        // El ingreso imponible baja gracias a las millas
+        const taxableIncome = Math.max(0, gross - mileageDeduction);
+
+        const fedTax = Math.max(0, calc(taxableIncome - DATA.fed.sd[status], DATA.fed.brackets) - (kids * 2000));
         let mnCredit = kids * 1750;
-        if (gross > (status === 'married' ? 35000 : 29500)) mnCredit = Math.max(0, mnCredit - (gross - (status === 'married' ? 35000 : 29500)) * 0.10);
-
-        let rentersRefund = (gross < 73000) ? Math.min(2500, (rent * 12 * 0.17) * 0.15) : 0;
-        const finalState = calc(gross - DATA.mn.sd[status], DATA.mn.brackets) - mnCredit;
+        if (taxableIncome > (status === 'married' ? 35000 : 29500)) mnCredit = Math.max(0, mnCredit - (taxableIncome - (status === 'married' ? 35000 : 29500)) * 0.10);
+        
+        const stateTax = calc(taxableIncome - DATA.mn.sd[status], DATA.mn.brackets) - mnCredit;
+        const totalTax = fedTax + stateTax;
 
         document.getElementById('fedTax').innerText = `$${Math.round(fedTax).toLocaleString()}`;
-        document.getElementById('stateTax').innerText = `$${Math.round(finalState).toLocaleString()}`;
-        document.getElementById('totalCredits').innerText = `-$${Math.round(mnCredit + (kids * 2000) + rentersRefund).toLocaleString()}`;
-        document.getElementById('netPay').innerText = `$${Math.round(gross - (fedTax + finalState - rentersRefund)).toLocaleString()}`;
-        
+        document.getElementById('stateTax').innerText = `$${Math.round(stateTax).toLocaleString()}`;
+        document.getElementById('totalCredits').innerText = `-$${Math.round(mnCredit + (kids * 2000)).toLocaleString()}`;
+        document.getElementById('netPay').innerText = `$${Math.round(taxableIncome - totalTax).toLocaleString()}`;
         document.getElementById('resultsBox').style.display = 'block';
-        document.getElementById('pdfBtn').style.display = 'block';
     }
 
-    async function generatePDF() {
+    function generatePDF() {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
-        
-        doc.setFontSize(20);
-        doc.text("Reporte Fiscal Minnesota 2025", 20, 20);
-        doc.setFontSize(12);
-        doc.text(`Ingreso Bruto: $${document.getElementById('grossIncome').value}`, 20, 40);
-        doc.text(`Estado Civil: ${document.getElementById('filingStatus').value}`, 20, 50);
-        doc.text("------------------------------------------", 20, 60);
-        doc.text(`Impuesto Federal: ${document.getElementById('fedTax').innerText}`, 20, 70);
-        doc.text(`Impuesto Estatal: ${document.getElementById('stateTax').innerText}`, 20, 80);
-        doc.text(`Creditos Totales: ${document.getElementById('totalCredits').innerText}`, 20, 90);
-        doc.setFontSize(16);
-        doc.text(`INGRESO NETO ESTIMADO: ${document.getElementById('netPay').innerText}`, 20, 110);
-        
-        doc.save("Reporte_Taxes_MN_2025.pdf");
+        doc.text("Resumen Fiscal Minnesota 2025", 20, 20);
+        doc.text(`Ingreso Neto despues de taxes: ${document.getElementById('netPay').innerText}`, 20, 40);
+        doc.save("Taxes_MN_2025.pdf");
     }
 </script>
 </body>
