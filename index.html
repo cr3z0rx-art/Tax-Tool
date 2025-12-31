@@ -3,150 +3,186 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculadora Fiscal MN 2025 - Gig Economy</title>
+    <title>FitPlanner Pro - Dashboard & Scanner</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background-color: #f0f4f8; display: flex; justify-content: center; padding: 20px; }
-        .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 600px; }
-        h2 { color: #2c3e50; text-align: center; border-bottom: 3px solid #27ae60; padding-bottom: 10px; }
-        .input-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; color: #34495e; }
-        input, select { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
-        .checkbox-group { display: flex; align-items: center; gap: 10px; margin: 15px 0; background: #e8f6ef; padding: 10px; border-radius: 8px; }
-        .checkbox-group input { width: auto; }
-        .gig-fields { display: none; background: #fdfefe; border: 1px dashed #27ae60; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
-        .btn-calc { width: 100%; padding: 15px; background-color: #27ae60; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; }
-        .results { margin-top: 25px; padding: 20px; background: #f8fdfa; border-radius: 10px; display: none; border: 1px solid #d4efdf; }
-        .net-pay { font-weight: bold; color: #27ae60; font-size: 26px; text-align: center; display: block; margin: 10px 0; }
-        .expense-note { color: #e67e22; font-size: 14px; font-weight: bold; }
+        :root {
+            --p: #27ae60; --s: #2980b9; --a: #e67e22; --bg: #f8f9fa;
+            --card: #ffffff; --text: #333; --border: #eee;
+        }
+        [data-theme="dark"] {
+            --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; --border: #333;
+        }
+
+        body { font-family: 'Segoe UI', system-ui; background: var(--bg); margin: 0; padding: 15px; color: var(--text); transition: 0.3s; }
+        
+        /* Dashboard Estilo Apple Health */
+        .dashboard { 
+            background: linear-gradient(135deg, var(--p), #2ecc71); 
+            padding: 20px; border-radius: 25px; color: white; margin-bottom: 20px;
+            box-shadow: 0 10px 20px rgba(39, 174, 96, 0.2);
+        }
+        .rings-container { display: flex; justify-content: space-around; margin-bottom: 15px; }
+        .ring-box { text-align: center; font-size: 11px; }
+        
+        /* Action Cards */
+        .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .action-card { 
+            background: var(--card); padding: 20px; border-radius: 20px; 
+            text-align: center; cursor: pointer; border: 1px solid var(--border);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02); transition: 0.2s;
+        }
+        .action-card:active { transform: scale(0.95); }
+        .icon { font-size: 28px; margin-bottom: 8px; display: block; }
+
+        /* Paneles Ocultos */
+        .panel { 
+            display: none; background: var(--card); border-radius: 25px; 
+            padding: 25px; margin-top: 20px; border: 1px solid var(--border);
+            animation: slideUp 0.4s ease;
+        }
+        @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        input, select { 
+            width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; 
+            border: 1px solid var(--border); background: var(--bg); color: var(--text);
+        }
+        .btn-main { 
+            background: var(--p); color: white; border: none; padding: 15px; 
+            width: 100%; border-radius: 12px; font-weight: bold; cursor: pointer;
+        }
+        #interactive video { width: 100%; border-radius: 15px; }
+        .theme-toggle { position: absolute; top: 10px; right: 10px; font-size: 20px; cursor: pointer; }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <h2>Calculadora de Taxes MN 2025</h2>
-    
-    <div class="input-group">
-        <label>Ingreso Bruto Anual (W2 + 1099) ($)</label>
-        <input type="number" id="grossIncome" placeholder="Ej: 50000">
-    </div>
+    <div class="theme-toggle" onclick="toggleTheme()">🌙</div>
 
-    <div class="checkbox-group">
-        <input type="checkbox" id="isGigWorker" onchange="toggleGigFields()">
-        <label for="isGigWorker" style="margin:0;">¿Trabajas con tu carro? (Uber, DoorDash, etc.)</label>
-    </div>
-
-    <div id="gigFields" class="gig-fields">
-        <div class="input-group">
-            <label>Millas trabajadas en el año</label>
-            <input type="number" id="workMiles" placeholder="Ej: 15000">
-            <small>El IRS permite deducir ~$0.67 por milla en 2025.</small>
+    <div class="dashboard">
+        <h3 style="margin:0 0 15px 0;">📊 Mi Progreso</h3>
+        <div class="rings-container">
+            <div class="ring-box"><canvas id="calChart" width="70" height="70"></canvas><br>Calorías</div>
+            <div class="ring-box"><canvas id="waterChart" width="70" height="70"></canvas><br>Agua</div>
+            <div class="ring-box"><canvas id="proChart" width="70" height="70"></canvas><br>Proteína</div>
+        </div>
+        <div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 15px;">
+            <canvas id="weightLine" height="100"></canvas>
         </div>
     </div>
 
-    <div class="input-group">
-        <label>Estado Civil</label>
-        <select id="filingStatus">
-            <option value="single">Single</option>
-            <option value="married">Married (Conjunto)</option>
+    <div class="action-grid">
+        <div class="action-card" onclick="showPanel('p-scan')">
+            <span class="icon">📸</span> <b>Escanear</b>
+        </div>
+        <div class="action-card" onclick="addWater()">
+            <span class="icon">💧</span> <b>+ Agua</b>
+            <small id="waterStatus">0.0 / 2.5 L</small>
+        </div>
+        <div class="action-card" onclick="showPanel('p-fast')">
+            <span class="icon">⏳</span> <b>Ayuno</b>
+        </div>
+        <div class="action-card" onclick="showPanel('p-config')">
+            <span class="icon">⚙️</span> <b>Ajustes</b>
+        </div>
+    </div>
+
+    <div id="p-scan" class="panel">
+        <h3 style="margin-top:0;">Escáner de Alimentos</h3>
+        <div id="interactive"></div>
+        <button class="btn-main" onclick="initQuagga()">Activar Cámara</button>
+        <div id="scan-res" style="margin-top:15px;"></div>
+    </div>
+
+    <div id="p-fast" class="panel">
+        <h3>Temporizador Ayuno 16:8</h3>
+        <div id="timer" style="font-size:30px; font-weight:bold; text-align:center; margin:20px 0; color:var(--a);">16:00:00</div>
+        <button class="btn-main" style="background:var(--a);" onclick="startFast()">Iniciar Cronómetro</button>
+    </div>
+
+    <div id="p-config" class="panel">
+        <h3>Configuración de Perfil</h3>
+        <label>Peso Actual (kg)</label>
+        <input type="number" id="w-input" value="70">
+        <label>Objetivo</label>
+        <select id="goal-input">
+            <option value="lose">Perder Grasa</option>
+            <option value="gain">Ganar Músculo</option>
         </select>
+        <button class="btn-main" onclick="saveSettings()">Guardar Todo</button>
     </div>
 
-    <div class="input-group">
-        <label>Número de Hijos (Menores de 17)</label>
-        <input type="number" id="children" value="0">
-    </div>
+    <script>
+        // --- INICIALIZACIÓN DE GRÁFICAS ---
+        const ringCfg = (color) => ({
+            type: 'doughnut',
+            data: { datasets: [{ data: [0, 100], backgroundColor: [color, 'rgba(255,255,255,0.2)'], borderWidth: 0 }] },
+            options: { cutout: '80%', plugins: { legend: { display: false } } }
+        });
 
-    <button class="btn-calc" onclick="updateUI()">Calcular Mi Promedio</button>
+        const calChart = new Chart(document.getElementById('calChart'), ringCfg('#ffffff'));
+        const waterChart = new Chart(document.getElementById('waterChart'), ringCfg('#3498db'));
+        const proChart = new Chart(document.getElementById('proChart'), ringCfg('#e67e22'));
 
-    <div class="results" id="resultsBox">
-        <div id="gigInfo" class="expense-note" style="display:none; margin-bottom:10px;"></div>
-        <div style="display:flex; justify-content:space-between;"><span>Impuesto Fed:</span> <span id="fedTax">$0</span></div>
-        <div style="display:flex; justify-content:space-between;"><span>Impuesto MN:</span> <span id="stateTax">$0</span></div>
-        <div style="display:flex; justify-content:space-between; color:#2980b9; font-weight:bold;">
-            <span>Total Créditos/Reembolsos:</span> <span id="totalCredits">-$0</span>
-        </div>
-        <hr>
-        <label style="text-align:center; display:block;">Ingreso Neto Estimado (Después de gastos y taxes):</label>
-        <span class="net-pay" id="netPay">$0</span>
-        <button onclick="generatePDF()" style="width:100%; background:#3498db; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer;">Descargar PDF</button>
-    </div>
-</div>
+        // Gráfica de peso (Línea)
+        new Chart(document.getElementById('weightLine'), {
+            type: 'line',
+            data: { labels: ['L','M','M','J','V','S','D'], datasets: [{ data: [80, 79.5, 79.8, 79.2, 78.8, 78.5, 78.2], borderColor: 'white', tension: 0.4 }] },
+            options: { plugins: { legend: false }, scales: { x: { display: false }, y: { display: false } } }
+        });
 
-<script>
-    const DATA = {
-        fed: { sd: {single: 15000, married: 30000}, brackets: [{r:0.1, t:0}, {r:0.12, t:11925}, {r:0.22, t:48475}, {r:0.24, t:103350}] },
-        mn: { sd: {single: 15000, married: 30000}, brackets: [{r:0.0535, t:0}, {r:0.068, t:32570}, {r:0.0785, t:106990}] }
-    };
-
-    function toggleGigFields() {
-        document.getElementById('gigFields').style.display = document.getElementById('isGigWorker').checked ? 'block' : 'none';
-    }
-
-    function calc(income, brackets) {
-        let tax = 0;
-        for (let i = brackets.length - 1; i >= 0; i--) {
-            if (income > brackets[i].t) {
-                tax += (income - brackets[i].t) * brackets[i].r;
-                income = brackets[i].t;
-            }
+        // --- LÓGICA DE FUNCIONES ---
+        let waterCount = 0;
+        function addWater() {
+            waterCount += 0.25;
+            document.getElementById('waterStatus').innerText = waterCount.toFixed(2) + " / 2.5 L";
+            waterChart.data.datasets[0].data = [ (waterCount/2.5)*100, 100 - (waterCount/2.5)*100 ];
+            waterChart.update();
         }
-        return tax;
-    }
 
-    function updateUI() {
-    let gross = parseFloat(document.getElementById('grossIncome').value) || 0;
-    const status = document.getElementById('filingStatus').value;
-    const kids = parseInt(document.getElementById('children').value) || 0;
-    const isGig = document.getElementById('isGigWorker').checked;
-    const miles = parseFloat(document.getElementById('workMiles').value) || 0;
+        function showPanel(id) {
+            document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
+            document.getElementById(id).style.display = 'block';
+            window.scrollTo(0, document.body.scrollHeight);
+        }
 
-    // ACTUALIZACIÓN 2025: Tasa de 70 centavos por milla
-    const MILEAGE_RATE = 0.70; 
-    let mileageDeduction = 0;
+        function toggleTheme() {
+            const b = document.documentElement;
+            b.getAttribute('data-theme') === 'dark' ? b.removeAttribute('data-theme') : b.setAttribute('data-theme', 'dark');
+        }
 
-    if (isGig) {
-        // Esta deducción ya cubre gasolina, aceite, llantas y reparaciones
-        mileageDeduction = miles * MILEAGE_RATE;
-        document.getElementById('gigInfo').innerHTML = `
-            <strong>Deducción por Trabajo ($0.70/milla):</strong> -$${Math.round(mileageDeduction).toLocaleString()}<br>
-            <small><i>*Incluye mantenimiento, gasolina y desgaste.</i></small>`;
-        document.getElementById('gigInfo').style.display = 'block';
-    } else {
-        document.getElementById('gigInfo').style.display = 'none';
-    }
+        // --- ESCÁNER ---
+        function initQuagga() {
+            Quagga.init({
+                inputStream: { name: "Live", type: "LiveStream", target: document.querySelector('#interactive'), constraints: { facingMode: "environment" } },
+                decoder: { readers: ["ean_reader"] }
+            }, (err) => { if(!err) Quagga.start(); });
 
-    // El ingreso imponible se reduce por las millas trabajadas
-    const taxableIncome = Math.max(0, gross - mileageDeduction);
+            Quagga.onDetected((data) => {
+                const code = data.codeResult.code;
+                Quagga.stop();
+                fetch(`https://world.openfoodfacts.org/api/v0/product/${code}.json`)
+                    .then(r => r.json())
+                    .then(res => {
+                        const p = res.product;
+                        const score = p.nutriscore_grade || 'C';
+                        document.getElementById('scan-res').innerHTML = `
+                            <div style="background:rgba(255,255,255,0.1); padding:15px; border-radius:15px;">
+                                <b>${p.product_name}</b><br>
+                                Calidad: <span style="color:var(--p)">Grado ${score.toUpperCase()}</span><br>
+                                <small>${score > 'C' ? '💡 Sugerencia: Busca algo menos procesado.' : '✅ Buen alimento.'}</small>
+                            </div>`;
+                    });
+            });
+        }
 
-    // Cálculos Federales y Estatales con el nuevo ingreso ajustado
-    const fedTax = Math.max(0, calc(taxableIncome - DATA.fed.sd[status], DATA.fed.brackets) - (kids * 2000));
-    
-    let mnCredit = kids * 1750;
-    let threshold = (status === 'married') ? 35000 : 29500;
-    if (taxableIncome > threshold) {
-        mnCredit = Math.max(0, mnCredit - (taxableIncome - threshold) * 0.10);
-    }
-    
-    const stateTax = calc(taxableIncome - DATA.mn.sd[status], DATA.mn.brackets) - mnCredit;
-    const totalTax = fedTax + stateTax;
-
-    // Mostrar resultados en la pantalla
-    document.getElementById('fedTax').innerText = `$${Math.round(fedTax).toLocaleString()}`;
-    document.getElementById('stateTax').innerText = `$${Math.round(stateTax).toLocaleString()}`;
-    document.getElementById('totalCredits').innerText = `-$${Math.round(mnCredit + (kids * 2000)).toLocaleString()}`;
-    document.getElementById('netPay').innerText = `$${Math.round(taxableIncome - totalTax).toLocaleString()}`;
-    document.getElementById('resultsBox').style.display = 'block';
-}
-
-
-    function generatePDF() {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-        doc.text("Resumen Fiscal Minnesota 2025", 20, 20);
-        doc.text(`Ingreso Neto despues de taxes: ${document.getElementById('netPay').innerText}`, 20, 40);
-        doc.save("Taxes_MN_2025.pdf");
-    }
-</script>
+        function saveSettings() {
+            alert("Perfil actualizado. ¡Sigue así!");
+            showPanel('none');
+        }
+    </script>
 </body>
 </html>
