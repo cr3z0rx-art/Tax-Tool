@@ -1,188 +1,268 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FitPlanner Pro - Dashboard & Scanner</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    
-    <style>
-        :root {
-            --p: #27ae60; --s: #2980b9; --a: #e67e22; --bg: #f8f9fa;
-            --card: #ffffff; --text: #333; --border: #eee;
-        }
-        [data-theme="dark"] {
-            --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; --border: #333;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FitPlanner Pro Ultra</title>
 
-        body { font-family: 'Segoe UI', system-ui; background: var(--bg); margin: 0; padding: 15px; color: var(--text); transition: 0.3s; }
-        
-        /* Dashboard Estilo Apple Health */
-        .dashboard { 
-            background: linear-gradient(135deg, var(--p), #2ecc71); 
-            padding: 20px; border-radius: 25px; color: white; margin-bottom: 20px;
-            box-shadow: 0 10px 20px rgba(39, 174, 96, 0.2);
-        }
-        .rings-container { display: flex; justify-content: space-around; margin-bottom: 15px; }
-        .ring-box { text-align: center; font-size: 11px; }
-        
-        /* Action Cards */
-        .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .action-card { 
-            background: var(--card); padding: 20px; border-radius: 20px; 
-            text-align: center; cursor: pointer; border: 1px solid var(--border);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.02); transition: 0.2s;
-        }
-        .action-card:active { transform: scale(0.95); }
-        .icon { font-size: 28px; margin-bottom: 8px; display: block; }
+<script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-        /* Paneles Ocultos */
-        .panel { 
-            display: none; background: var(--card); border-radius: 25px; 
-            padding: 25px; margin-top: 20px; border: 1px solid var(--border);
-            animation: slideUp 0.4s ease;
-        }
-        @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+<style>
+:root { --p:#27ae60; --a:#e67e22; --bg:#f8f9fa; --card:#fff; --text:#333; }
+[data-theme="dark"] { --bg:#121212; --card:#1e1e1e; --text:#eee; }
 
-        input, select { 
-            width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; 
-            border: 1px solid var(--border); background: var(--bg); color: var(--text);
-        }
-        .btn-main { 
-            background: var(--p); color: white; border: none; padding: 15px; 
-            width: 100%; border-radius: 12px; font-weight: bold; cursor: pointer;
-        }
-        #interactive video { width: 100%; border-radius: 15px; }
-        .theme-toggle { position: absolute; top: 10px; right: 10px; font-size: 20px; cursor: pointer; }
-    </style>
+body {
+  margin:0; font-family:system-ui;
+  background:var(--bg); color:var(--text);
+  padding:15px; transition:.3s;
+}
+
+.header {
+  display:flex; justify-content:space-between;
+  align-items:center; margin-bottom:10px;
+}
+
+.dashboard {
+  background:linear-gradient(135deg,var(--p),#2ecc71);
+  padding:20px; border-radius:22px;
+  color:white; text-align:center;
+}
+
+.action-grid {
+  display:grid; grid-template-columns:1fr 1fr;
+  gap:15px; margin-top:15px;
+}
+
+.action-card {
+  background:var(--card); padding:20px;
+  border-radius:18px; text-align:center;
+  cursor:pointer;
+  box-shadow:0 4px 6px rgba(0,0,0,0.05);
+}
+
+.panel {
+  display:none; background:var(--card);
+  margin-top:20px; padding:20px;
+  border-radius:22px;
+  animation:fadeIn .3s;
+}
+
+@keyframes fadeIn {
+  from {opacity:0; transform:translateY(10px);}
+  to {opacity:1; transform:translateY(0);}
+}
+
+.btn {
+  width:100%; padding:14px;
+  border:none; border-radius:12px;
+  background:var(--p); color:white;
+  font-weight:bold; cursor:pointer;
+}
+
+#interactive video {
+  width:100%; border-radius:15px;
+}
+
+select {
+  background:var(--card); color:var(--text);
+  padding:5px; border-radius:5px;
+  border:1px solid var(--p);
+}
+</style>
 </head>
+
 <body>
 
-    <div class="theme-toggle" onclick="toggleTheme()">🌙</div>
+<div class="header">
+  <select id="langSelect" onchange="changeLang()">
+    <option value="es">Español</option>
+    <option value="en">English</option>
+  </select>
+  <div style="cursor:pointer;font-size:22px;" onclick="toggleTheme()">🌙</div>
+</div>
 
-    <div class="dashboard">
-        <h3 style="margin:0 0 15px 0;">📊 Mi Progreso</h3>
-        <div class="rings-container">
-            <div class="ring-box"><canvas id="calChart" width="70" height="70"></canvas><br>Calorías</div>
-            <div class="ring-box"><canvas id="waterChart" width="70" height="70"></canvas><br>Agua</div>
-            <div class="ring-box"><canvas id="proChart" width="70" height="70"></canvas><br>Proteína</div>
-        </div>
-        <div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 15px;">
-            <canvas id="weightLine" height="100"></canvas>
-        </div>
-    </div>
+<div class="dashboard">
+  <h3 id="txt-prog">📊 Mi Progreso</h3>
+  <canvas id="waterChart" width="100" height="100"></canvas>
+  <div id="waterStatus" style="font-weight:bold;font-size:1.2rem;">
+    0.00 / 2.5 L
+  </div>
+</div>
 
-    <div class="action-grid">
-        <div class="action-card" onclick="showPanel('p-scan')">
-            <span class="icon">📸</span> <b>Escanear</b>
-        </div>
-        <div class="action-card" onclick="addWater()">
-            <span class="icon">💧</span> <b>+ Agua</b>
-            <small id="waterStatus">0.0 / 2.5 L</small>
-        </div>
-        <div class="action-card" onclick="showPanel('p-fast')">
-            <span class="icon">⏳</span> <b>Ayuno</b>
-        </div>
-        <div class="action-card" onclick="showPanel('p-config')">
-            <span class="icon">⚙️</span> <b>Ajustes</b>
-        </div>
-    </div>
+<div class="action-grid">
+  <div class="action-card" onclick="addWater()">
+    <span id="txt-addwater">💧 + Agua</span>
+  </div>
+  <div class="action-card" onclick="showPanel('scan')">
+    <span id="txt-scanbtn">📸 Escanear</span>
+  </div>
+</div>
 
-    <div id="p-scan" class="panel">
-        <h3 style="margin-top:0;">Escáner de Alimentos</h3>
-        <div id="interactive"></div>
-        <button class="btn-main" onclick="initQuagga()">Activar Cámara</button>
-        <div id="scan-res" style="margin-top:15px;"></div>
-    </div>
+<div id="scan" class="panel">
+  <h3 id="txt-scantitle">Escáner de Alimentos</h3>
+  <div id="interactive"></div>
+  <button class="btn" id="txt-cambtn" onclick="startScanner()">
+    Activar Cámara
+  </button>
+  <div id="scanResult" style="margin-top:15px;padding:10px;border-radius:10px;"></div>
+</div>
 
-    <div id="p-fast" class="panel">
-        <h3>Temporizador Ayuno 16:8</h3>
-        <div id="timer" style="font-size:30px; font-weight:bold; text-align:center; margin:20px 0; color:var(--a);">16:00:00</div>
-        <button class="btn-main" style="background:var(--a);" onclick="startFast()">Iniciar Cronómetro</button>
-    </div>
+<script>
+/* =========================
+   I18N
+========================= */
+const i18n = {
+  es: {
+    prog:"📊 Mi Progreso", addwater:"💧 + Agua", scanbtn:"📸 Escanear",
+    scantitle:"Escáner de Alimentos", cambtn:"Activar Cámara",
+    newday:"¡Buen día! Tu contador ha sido reiniciado.",
+    grades:{A:"Excelente",B:"Bueno",C:"Moderado",D:"Malo",E:"Muy Malo"},
+    advice:{A:"Muy saludable",B:"Buena opción",C:"Consumo ocasional",D:"Alto en azúcar/grasa",E:"Ultra procesado"}
+  },
+  en: {
+    prog:"📊 My Progress", addwater:"💧 + Water", scanbtn:"📸 Scan Food",
+    scantitle:"Food Scanner", cambtn:"Start Camera",
+    newday:"Good morning! Your counter has been reset.",
+    grades:{A:"Excellent",B:"Good",C:"Moderate",D:"Bad",E:"Very Bad"},
+    advice:{A:"Very healthy",B:"Good choice",C:"Occasional intake",D:"High sugar/fat",E:"Ultra processed"}
+  }
+};
 
-    <div id="p-config" class="panel">
-        <h3>Configuración de Perfil</h3>
-        <label>Peso Actual (kg)</label>
-        <input type="number" id="w-input" value="70">
-        <label>Objetivo</label>
-        <select id="goal-input">
-            <option value="lose">Perder Grasa</option>
-            <option value="gain">Ganar Músculo</option>
-        </select>
-        <button class="btn-main" onclick="saveSettings()">Guardar Todo</button>
-    </div>
+/* =========================
+   STATE
+========================= */
+const state = {
+  water: Number(localStorage.getItem('water')) || 0,
+  theme: localStorage.getItem('theme') || 'light',
+  lang: localStorage.getItem('lang') || 'es',
+  lastDate: localStorage.getItem('lastDate') || new Date().toDateString()
+};
 
-    <script>
-        // --- INICIALIZACIÓN DE GRÁFICAS ---
-        const ringCfg = (color) => ({
-            type: 'doughnut',
-            data: { datasets: [{ data: [0, 100], backgroundColor: [color, 'rgba(255,255,255,0.2)'], borderWidth: 0 }] },
-            options: { cutout: '80%', plugins: { legend: { display: false } } }
-        });
+function saveState(){
+  Object.keys(state).forEach(k =>
+    localStorage.setItem(k,state[k])
+  );
+}
 
-        const calChart = new Chart(document.getElementById('calChart'), ringCfg('#ffffff'));
-        const waterChart = new Chart(document.getElementById('waterChart'), ringCfg('#3498db'));
-        const proChart = new Chart(document.getElementById('proChart'), ringCfg('#e67e22'));
+/* =========================
+   NEW DAY CHECK
+========================= */
+function checkNewDay(){
+  const today = new Date().toDateString();
+  if(state.lastDate !== today){
+    state.water = 0;
+    state.lastDate = today;
+    saveState();
+    alert(i18n[state.lang].newday);
+  }
+}
 
-        // Gráfica de peso (Línea)
-        new Chart(document.getElementById('weightLine'), {
-            type: 'line',
-            data: { labels: ['L','M','M','J','V','S','D'], datasets: [{ data: [80, 79.5, 79.8, 79.2, 78.8, 78.5, 78.2], borderColor: 'white', tension: 0.4 }] },
-            options: { plugins: { legend: false }, scales: { x: { display: false }, y: { display: false } } }
-        });
+/* =========================
+   UI
+========================= */
+function changeLang(){
+  state.lang = langSelect.value;
+  saveState();
+  updateUI();
+}
 
-        // --- LÓGICA DE FUNCIONES ---
-        let waterCount = 0;
-        function addWater() {
-            waterCount += 0.25;
-            document.getElementById('waterStatus').innerText = waterCount.toFixed(2) + " / 2.5 L";
-            waterChart.data.datasets[0].data = [ (waterCount/2.5)*100, 100 - (waterCount/2.5)*100 ];
-            waterChart.update();
-        }
+function updateUI(){
+  const t = i18n[state.lang];
+  txt-prog.innerText = t.prog;
+  txt-addwater.innerText = t.addwater;
+  txt-scanbtn.innerText = t.scanbtn;
+  txt-scantitle.innerText = t.scantitle;
+  txt-cambtn.innerText = t.cambtn;
+  langSelect.value = state.lang;
+  updateWaterUI();
+}
 
-        function showPanel(id) {
-            document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
-            document.getElementById(id).style.display = 'block';
-            window.scrollTo(0, document.body.scrollHeight);
-        }
+function showPanel(id){
+  document.querySelectorAll('.panel').forEach(p=>p.style.display='none');
+  document.getElementById(id).style.display='block';
+}
 
-        function toggleTheme() {
-            const b = document.documentElement;
-            b.getAttribute('data-theme') === 'dark' ? b.removeAttribute('data-theme') : b.setAttribute('data-theme', 'dark');
-        }
+/* =========================
+   THEME (FIXED)
+========================= */
+function toggleTheme(){
+  state.theme = state.theme === 'dark' ? 'light' : 'dark';
+  if(state.theme === 'dark')
+    document.documentElement.setAttribute('data-theme','dark');
+  else
+    document.documentElement.removeAttribute('data-theme');
+  saveState();
+}
 
-        // --- ESCÁNER ---
-        function initQuagga() {
-            Quagga.init({
-                inputStream: { name: "Live", type: "LiveStream", target: document.querySelector('#interactive'), constraints: { facingMode: "environment" } },
-                decoder: { readers: ["ean_reader"] }
-            }, (err) => { if(!err) Quagga.start(); });
+/* =========================
+   CHART
+========================= */
+const waterChart = new Chart(waterChart.getContext('2d'),{
+  type:'doughnut',
+  data:{datasets:[{data:[0,100],backgroundColor:['#fff','rgba(255,255,255,.3)'],borderWidth:0}]},
+  options:{cutout:'80%',plugins:{legend:{display:false}}}
+});
 
-            Quagga.onDetected((data) => {
-                const code = data.codeResult.code;
-                Quagga.stop();
-                fetch(`https://world.openfoodfacts.org/api/v0/product/${code}.json`)
-                    .then(r => r.json())
-                    .then(res => {
-                        const p = res.product;
-                        const score = p.nutriscore_grade || 'C';
-                        document.getElementById('scan-res').innerHTML = `
-                            <div style="background:rgba(255,255,255,0.1); padding:15px; border-radius:15px;">
-                                <b>${p.product_name}</b><br>
-                                Calidad: <span style="color:var(--p)">Grado ${score.toUpperCase()}</span><br>
-                                <small>${score > 'C' ? '💡 Sugerencia: Busca algo menos procesado.' : '✅ Buen alimento.'}</small>
-                            </div>`;
-                    });
-            });
-        }
+function updateWaterUI(){
+  const pct = Math.min((state.water/2.5)*100,100);
+  waterChart.data.datasets[0].data=[pct,100-pct];
+  waterChart.update();
+  waterStatus.innerText = state.water.toFixed(2)+' / 2.5 L';
+}
 
-        function saveSettings() {
-            alert("Perfil actualizado. ¡Sigue así!");
-            showPanel('none');
-        }
-    </script>
+function addWater(){
+  state.water = Math.min(state.water + 0.25, 2.5);
+  saveState();
+  updateWaterUI();
+}
+
+/* =========================
+   SCANNER (FIXED)
+========================= */
+function startScanner(){
+  Quagga.stop();
+  Quagga.offDetected();
+
+  Quagga.init({
+    inputStream:{type:"LiveStream",target:"#interactive",constraints:{facingMode:"environment"}},
+    decoder:{readers:["ean_reader"]}
+  },err=>{
+    if(err){
+      alert("No se pudo acceder a la cámara");
+      return;
+    }
+    Quagga.start();
+  });
+
+  Quagga.onDetected(async data=>{
+    Quagga.stop();
+    const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${data.codeResult.code}.json`);
+    const json = await res.json();
+    if(!json.product) return;
+
+    const grade = (json.product.nutriscore_grade || 'C').toUpperCase();
+    const t = i18n[state.lang];
+    const colors={A:"#2ecc71",B:"#27ae60",C:"#f1c40f",D:"#e67e22",E:"#e74c3c"};
+
+    scanResult.innerHTML = `
+      <div style="border-left:5px solid ${colors[grade]};padding-left:10px;">
+        <b>${json.product.product_name||'Producto'}</b><br>
+        <span style="color:${colors[grade]}">${t.grades[grade]}</span><br>
+        <small>${t.advice[grade]}</small>
+      </div>`;
+  });
+}
+
+/* =========================
+   INIT
+========================= */
+if(state.theme==='dark')
+  document.documentElement.setAttribute('data-theme','dark');
+
+checkNewDay();
+updateUI();
+</script>
+
 </body>
 </html>
